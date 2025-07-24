@@ -1,19 +1,19 @@
 library(plotly)
 
 set.seed(42)
-n = 500
-theta = runif(n, 0, 2 * pi)
+n <- 500
+theta <- runif(n, 0, 2 * pi)
 
-r1 = sqrt(runif(n, 0, 1))
-x1 = r1 * cos(theta)
-y1 = r1 * sin(theta)
+r1 <- sqrt(runif(n, 0, 1))
+x1 <- r1 * cos(theta)
+y1 <- r1 * sin(theta)
 
-r2 = sqrt(runif(n, 1, 2))
-x2 = r2 * cos(theta)
-y2 = r2 * sin(theta)
+r2 <- sqrt(runif(n, 1, 2))
+x2 <- r2 * cos(theta)
+y2 <- r2 * sin(theta)
 
 
-data = data.frame(
+data <- data.frame(
   x = c(x1, x2),
   y = c(y1, y2),
   label = factor(rep(0:1, each = n))
@@ -29,7 +29,7 @@ plot_ly(data, x = ~x, y = ~y, color = ~label, colors = c("blue", "red")) %>%
   )
 
 # Kernel SVM 3D Visualization
-data$z = data$x^2 + data$y^2
+data$z <- data$x^2 + data$y^2
 
 plot_ly(
   data,

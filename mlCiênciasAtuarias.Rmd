@@ -11,7 +11,7 @@ output:
     toc: true         # Gera o sumário automaticamente
     toc_depth: 2      # Limita o sumário a dois níveis
   pdf_document: default
-title: 'Credit Classification: Supervised Machine Learning'
+title: 'Credit Classification:   Machine Learning'
 params:
   digits: 4
 header-includes: |
