@@ -25,7 +25,7 @@ You need to have R and RStudio installed on your system. You will also need the 
 
 1.  Clone the repository:
     ```bash
-    git clone https://github.com/your-username/your-repository.git
+    git clone https://github.com/gabrieldadcarvalho/actuarial_seminar.git
     ```
 2.  Open the `mlCiênciasAtuarias.Rmd` file in RStudio.
 3.  Install the required packages by running the following commands in the R console:
