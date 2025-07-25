@@ -1,39 +1,51 @@
 ---
-pdf_document:
-  fig_caption: true
-  number_sections: true
-  dev: png
+title: 'Credit Classification: Supervised Machine Learning'
 author: "Gabriel D'assumpção de Carvalho"
 date: "`r Sys.Date()`"
 output:
   bookdown::pdf_document2:
     number_sections: true
-    toc: true         # Gera o sumário automaticamente
-    toc_depth: 2      # Limita o sumário a dois níveis
-  pdf_document: default
-title: 'Credit Classification:   Machine Learning'
-params:
-  digits: 4
+    toc: true
+    toc_depth: 2
+    fig_caption: true
+    dev: png
+    keep_tex: true
+always_allow_html: true
+knitr:
+  opts_chunk:
+    dev: "png"
+    dpi: 300
+    fig.align: "center"
+    fig.width: 7
+    fig.height: 5
+    echo: true
+    warning: false
+    message: false
+    screenshot.force: true
 header-includes: |
   \usepackage{amsmath}
   \usepackage{fancyhdr}
   \usepackage{listings}
-  \lstset{
-    breaklines=true,
-    basicstyle=\ttfamily\small,
-    frame=single,
-    postbreak=\mbox{\textcolor{red}{$\hookrightarrow$}\space},
-    breakindent=10pt
-  }
+  \usepackage{xcolor}
+  \usepackage{fvextra}
+    \DefineVerbatimEnvironment{Highlighting}{Verbatim}{
+      breaksymbolleft={},
+      showspaces = false,
+      showtabs = false,
+      breaklines,
+      commandchars=\\\{\}
+    }
   \pagestyle{fancy}
-  \fancyhead[L]{Resumo do Actuar}
+  \fancyhead[L]{Credit Classification: Supervised Machine Learning}
   \fancyfoot[C]{Página \thepage}
   \fancyhead[C]{}
-knitr:
-  opts_chunk:
-    screenshot.force: TRUE
+params:
+  digits: 4
 ---
 
+```{r, echo=FALSE}
+knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 60), tidy = TRUE)
+```
 
 \newpage
 
@@ -75,6 +87,7 @@ set.seed(42)
 
 ## Data Import
 ```{r, warning=FALSE}
+# Load the dataset
 # Load the dataset
 df <- read.csv("/home/gabrieldadcarvalho/github/actuarial_seminar/data/original.csv")[, -1]
 print(head(df))
@@ -220,10 +233,10 @@ predictedAge <- predict(model, newdata = test)
 # Mean Squared Error (MSE) for the predictions
 mse <- 0
 for (i in 1:length(predictedAge)) {
-  mse = mse + (predictedAge[i] - test$age[i])^2
+  mse <- mse + (predictedAge[i] - test$age[i])^2
 }
 
-mse = mse / length(predictedAge)
+mse <- mse / length(predictedAge)
 print(mse)
 ```
 
@@ -293,24 +306,26 @@ confusionMatrix(as.factor(test$default), as.factor(logistic_pred_class), dnn = c
 ## Suport Vector Machine (SVM)
 ```{r, warning=FALSE}
 # Train a Support Vector Machine (SVM) model
-svm_model <- svm(default ~ ., data = train, kernel = "radial", cost = 1, gamma = 3)
+svm_model <- svm(default ~ ., data = train, kernel = "radial", cost = 1, gamma = 3, type = "C-classification", probability = TRUE)
 
 summary(svm_model)
 ```
 
 ```{r svm-predict, message=FALSE, warning=FALSE}
 # Predict on the test set using SVM
-svm_pred <- predict(svm_model, newdata = test)
-svm_pred_class <- ifelse(svm_pred >= 0.5, 1, 0)
+svm_pred <- predict(svm_model, newdata = test, probability = TRUE)
+svm_probs <- attr(svm_pred, "probabilities")
 
-head(data.frame(Previsto = svm_pred_class, Prob = svm_pred))
+head(svm_probs)
+
+head(data.frame(Previsto = svm_pred, Prob_Classe_0 = svm_pred))
 ```
 
 ```{r svm-metrics, message=FALSE, warning=FALSE}
 levels_ref <- c("0", "1")
 
 reference <- factor(test$default, levels = levels_ref)
-prediction <- factor(svm_pred_class, levels = levels_ref)
+prediction <- factor(svm_pred, levels = levels_ref)
 
 # Confusion matrix for SVM
 confusionMatrix(reference, prediction, dnn = c("Reference", "Prediction"))
@@ -327,40 +342,22 @@ test <- subset(df, split == FALSE)
 means <- colMeans(train[, cols_for_stats], na.rm = TRUE)
 sds <- apply(train[, cols_for_stats], 2, sd, na.rm = TRUE)
 
-trainT <- train["default"]
-testT <- test["default"]
-
-trainT$ageInterval <- cut(train$age, breaks = c(18, 40, 60, Inf), right = FALSE)
-testT$ageInterval <- cut(test$age, breaks = c(18, 40, 60, Inf), right = FALSE)
-
-# Menos intervalos para income
-trainT$incomeInterval <- cut(train$income, breaks = c(20000, 50000, 100000, Inf), right = FALSE)
-testT$incomeInterval <- cut(test$income, breaks = c(20000, 50000, 100000, Inf), right = FALSE)
-
-# Menos intervalos para loan
-trainT$loanInterval <- cut(train$loan, breaks = c(0, 5000, 10000, Inf), right = FALSE)
-testT$loanInterval <- cut(test$loan, breaks = c(0, 5000, 10000, Inf), right = FALSE)
-
-
-```
-
-```{r, warning=FALSE}
-ageClass <- table(trainT$ageInterval, trainT$default)
-print(ageClass)
-
-incomeClass <- table(trainT$incomeInterval, trainT$default)
-print(incomeClass)
-
-loanClass <- table(trainT$loanInterval, trainT$default)
-print(loanClass)
+# Z-score normalization
+for (c in colnames(train[(numeric_cols & names(train) != "default")])) {
+  if (is.numeric(train[[c]])) {
+    train[[c]] <- (train[[c]] - means[c]) / sds[c]
+    test[[c]] <- (test[[c]] - means[c]) / sds[c]
+  }
+}
+print(summary(train))
 ```
 
 ```{r, warnings=FALSE}
-dt_model <- rpart(default ~., data=train, method = "class")
+dt_model <- rpart(default ~ ., data = train, method = "class")
 ```
 
 ```{r, warning=FALSE}
-rpart.plot(dt_model, type=5, extra=104, main="Decision Tree for Default Prediction", box.palette = "RdYlGn", shadow.col = "gray")
+rpart.plot(dt_model, type = 5, extra = 104, main = "Decision Tree for Default Prediction", box.palette = "RdYlGn", shadow.col = "gray")
 ```
 
 ### Predicting
